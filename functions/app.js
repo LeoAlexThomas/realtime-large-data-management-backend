@@ -3,6 +3,9 @@ const cors = require("cors");
 const dotenv = require("dotenv").config();
 const serverless = require("serverless-http");
 const errorHandler = require("../middlewares/errorHandler");
+const connectDB = require("../config/connectDB");
+
+connectDB();
 
 const app = express();
 
