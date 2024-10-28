@@ -28,7 +28,7 @@ const registerUser = asyncHandler(async (req, res) => {
     throw Error("User already registered");
   }
 
-  const hashedPassword = bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   const createdUser = await User.create({
     name,
@@ -37,18 +37,12 @@ const registerUser = asyncHandler(async (req, res) => {
     password: hashedPassword, // NOTE: Storing  hashed password instead of storing real password due user security issues
   });
 
-  const accessToken = getAccessToken({
-    userId: createdUser.id,
-    userEmail: createdUser.email,
-  });
-
   res.status(200).json({
     isSuccess: true,
     message: "User registered successfully",
     data: {
       name: createdUser.name,
       email: createdUser.email,
-      token: accessToken,
     },
   });
 });
@@ -57,7 +51,29 @@ const registerUser = asyncHandler(async (req, res) => {
 //@route POST /user/login
 //@access public
 const loginUser = asyncHandler(async (req, res) => {
-  console.log("Login user: ", req.body);
+  const { email, password } = req.body;
+
+  const user = await User.findOne({ email });
+  if (lodash.isNil(user)) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  const isPasswordCorrect = await bcrypt.compare(password, user.password);
+
+  if (!isPasswordCorrect) {
+    res.status(400);
+    throw new Error("Password is incorrect");
+  }
+
+  const accessToken = getAccessToken({
+    userId: user.id,
+    userEmail: user.email,
+  });
+
+  res.status(200).json({
+    token: accessToken,
+  });
 });
 
 //@desc Registering new users
